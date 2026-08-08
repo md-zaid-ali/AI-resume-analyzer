@@ -1,0 +1,4 @@
+# Ignore scratch temporary folder
+scratch/
+user-data/
+*.log

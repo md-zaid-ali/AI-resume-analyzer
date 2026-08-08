@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AI Resume Analyzer - Instant ATS scoring, skill extraction, gap analysis, missing skills detector, and bullet point rewrites.">
+  <title>AI Resume Analyzer - ATS Score & Skill Gap Optimizer</title>
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- PDF.js CDN for client-side PDF parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+  <!-- Mammoth.js CDN for client-side DOCX parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </div>
+        <div>
+          <span class="brand-title">AI Resume Analyzer</span>
+        </div>
+        <span class="brand-badge">Pro ATS v2.5</span>
+      </div>
+
+      <div class="header-actions">
+        <button id="themeToggle" class="btn btn-icon" title="Toggle Light/Dark Theme" aria-label="Toggle Theme">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <h1 class="hero-title">Optimize Your Resume with AI</h1>
+      <p class="hero-subtitle">Upload your resume to extract skills, evaluate ATS compatibility, identify missing skills against target job roles, and generate high-impact bullet rewrites.</p>
+      
+      <!-- Sample Loaders -->
+      <div class="sample-bar">
+        <span class="sample-label">Try Sample Resumes:</span>
+        <button class="sample-chip" data-sample="software_engineer">⚡ Senior Full Stack (Score 90+)</button>
+        <button class="sample-chip" data-sample="mid_developer">🛠️ Mid-Level Software Developer (Score 65)</button>
+        <button class="sample-chip" data-sample="data_scientist">🤖 Data Scientist & AI Specialist (Score 88)</button>
+      </div>
+    </section>
+
+    <!-- Input Section Grid -->
+    <div class="input-grid">
+      
+      <!-- Left Card: File Upload & Raw Text -->
+      <div class="card">
+        <h2 class="card-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          1. Upload or Paste Resume
+        </h2>
+
+        <div id="fileDropzone" class="dropzone">
+          <div class="dropzone-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          </div>
+          <div class="dropzone-title">Drag & drop your PDF, DOCX, or TXT file here</div>
+          <div class="dropzone-sub">or click to browse files from your computer</div>
+          <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.txt,.md" style="display: none;">
+        </div>
+
+        <div id="uploadStatus" style="font-size:0.85rem; color:var(--accent-cyan); margin: 12px 0 16px; font-weight:600;">Ready</div>
+
+        <div class="form-group">
+          <label for="resumeTextInput" class="form-label">Or Paste Resume Text:</label>
+          <textarea id="resumeTextInput" class="text-area" placeholder="Paste full resume plain text here..."></textarea>
+        </div>
+      </div>
+
+      <!-- Right Card: Target Role & Job Description -->
+      <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <h2 class="card-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-secondary)" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            2. Set Target Job & Industry
+          </h2>
+
+          <div class="form-group">
+            <label for="targetRoleSelect" class="form-label">Select Target Role Benchmark:</label>
+            <select id="targetRoleSelect" class="form-select">
+              <option value="software_engineer" selected>Software Engineer / Developer</option>
+              <option value="full_stack">Full Stack Engineer</option>
+              <option value="frontend_engineer">Frontend Engineer</option>
+              <option value="backend_engineer">Backend Engineer</option>
+              <option value="devops_cloud">DevOps & Cloud Engineer</option>
+              <option value="data_scientist">Data Scientist / AI Specialist</option>
+              <option value="product_manager">Product Manager</option>
+              <option value="data_analyst">Data Analyst</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="customJdInput" class="form-label">Optional: Paste Specific Target Job Description (JD)</label>
+            <textarea id="customJdInput" class="text-area" style="height: 110px;" placeholder="Paste the job posting description here to extract exact missing keywords..."></textarea>
+          </div>
+        </div>
+
+        <button id="btnAnalyze" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 1.05rem; margin-top: 16px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          Run Full AI Analysis
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Dashboard Results Section -->
+    <main id="dashboard" class="dashboard">
+
+      <!-- Score Banner -->
+      <div class="score-banner">
+        
+        <!-- Radial Score Gauge Card -->
+        <div class="card gauge-card">
+          <div class="gauge-container">
+            <svg class="gauge-svg" viewBox="0 0 160 160">
+              <defs>
+                <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#6366f1" />
+                  <stop offset="50%" stop-color="#8b5cf6" />
+                  <stop offset="100%" stop-color="#06b6d4" />
+                </linearGradient>
+              </defs>
+              <circle class="gauge-bg" cx="80" cy="80" r="70"></circle>
+              <circle id="gaugeFill" class="gauge-fill" cx="80" cy="80" r="70"></circle>
+            </svg>
+            <div class="gauge-text">
+              <div id="gaugeNumber" class="gauge-number">0</div>
+              <div class="gauge-max">/ 100</div>
+            </div>
+          </div>
+          <div id="gaugeVerdict" class="gauge-verdict">Evaluating ATS Match...</div>
+          <div class="gauge-subtitle">Overall Resume Quality Score</div>
+        </div>
+
+        <!-- 5-Dimensional Breakdown Bars -->
+        <div class="card breakdown-card">
+          <h3 class="breakdown-title">Multi-Dimensional Score Breakdown</h3>
+
+          <div class="progress-item">
+            <div class="progress-header">
+              <span>🎯 Target Skill Match & Overlap (30%)</span>
+              <span id="valSkills">0/100</span>
+            </div>
+            <div class="progress-bar-bg"><div id="barSkills" class="progress-bar-fill fill-purple"></div></div>
+          </div>
+
+          <div class="progress-item">
+            <div class="progress-header">
+              <span>📈 Impact & Quantifiable Metrics (25%)</span>
+              <span id="valImpact">0/100</span>
+            </div>
+            <div class="progress-bar-bg"><div id="barImpact" class="progress-bar-fill fill-emerald"></div></div>
+          </div>
+
+          <div class="progress-item">
+            <div class="progress-header">
+              <span>📄 ATS Readability & Structure (20%)</span>
+              <span id="valStructure">0/100</span>
+            </div>
+            <div class="progress-bar-bg"><div id="barStructure" class="progress-bar-fill fill-cyan"></div></div>
+          </div>
+
+          <div class="progress-item">
+            <div class="progress-header">
+              <span>⚡ Experience & Power Verbs (15%)</span>
+              <span id="valQuality">0/100</span>
+            </div>
+            <div class="progress-bar-bg"><div id="barQuality" class="progress-bar-fill fill-amber"></div></div>
+          </div>
+
+          <div class="progress-item">
+            <div class="progress-header">
+              <span>🎓 Education & Credentials (10%)</span>
+              <span id="valEdu">0/100</span>
+            </div>
+            <div class="progress-bar-bg"><div id="barEdu" class="progress-bar-fill fill-rose"></div></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Dashboard Navigation Tabs -->
+      <nav class="dashboard-tabs" aria-label="Dashboard views">
+        <button class="dash-tab active" data-tab="overview">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Overview & Summary
+        </button>
+        <button class="dash-tab" data-tab="skills">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Extracted Skill Matrix
+        </button>
+        <button class="dash-tab" data-tab="gap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Missing Skill Gaps
+        </button>
+        <button class="dash-tab" data-tab="recs">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          AI Recommendations
+        </button>
+        <button class="dash-tab" data-tab="rewriter">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Bullet Rewriter & Live Editor
+        </button>
+      </nav>
+
+      <!-- Panel 1: Executive Overview -->
+      <section id="panel-overview" class="tab-panel active">
+        <div class="card" style="margin-bottom:20px;">
+          <h3 class="card-title">✨ AI Executive Summary Generation</h3>
+          <p id="generatedSummary" style="font-size:1.02rem; line-height:1.7; color:var(--text-primary); background:rgba(99,102,241,0.08); padding:16px; border-left:4px solid var(--accent-primary); border-radius:8px;"></p>
+        </div>
+
+        <div id="quickStatsGrid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px;"></div>
+      </section>
+
+      <!-- Panel 2: Extracted Skill Matrix -->
+      <section id="panel-skills" class="tab-panel">
+        <div class="card">
+          <h3 class="card-title">🔍 Identified Skills & Technologies</h3>
+          <div id="skillsMatrixContainer"></div>
+        </div>
+      </section>
+
+      <!-- Panel 3: Missing Skill Gaps -->
+      <section id="panel-gap" class="tab-panel">
+        <div class="card">
+          <h3 class="card-title">🎯 Missing Skill Gap Analysis</h3>
+          <div id="gapAnalysisContainer"></div>
+        </div>
+      </section>
+
+      <!-- Panel 4: AI Recommendations -->
+      <section id="panel-recs" class="tab-panel">
+        <div class="card">
+          <h3 class="card-title">💡 Actionable Improvement Recommendations</h3>
+          <div id="recommendationsList" class="rec-list"></div>
+        </div>
+      </section>
+
+      <!-- Panel 5: Bullet Rewriter & Live Editor -->
+      <section id="panel-rewriter" class="tab-panel">
+        <div class="card" style="margin-bottom:24px;">
+          <h3 class="card-title">✨ AI Bullet Point Optimization (XYZ Impact Formula)</h3>
+          <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:14px;">The XYZ formula: "Accomplished [X] as measured by [Y] by doing [Z]". Here are auto-rewritten versions of weak or non-quantified bullet points from your resume:</p>
+          <div id="bulletRewriterContainer"></div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">📝 Live Interactive Resume Editor</h3>
+          <p style="font-size:0.88rem; color:var(--text-secondary); margin-bottom:12px;">Edit your resume text directly below and hit <strong>Re-Score</strong> to see your live ATS score improve in real time!</p>
+          <textarea id="liveResumeEditor" class="text-area" style="height: 260px; font-family: monospace; font-size:0.88rem;"></textarea>
+          <div style="margin-top:14px; text-align:right;">
+            <button id="btnRescoreLive" class="btn btn-primary">
+              ⚡ Apply Edits & Re-Score Resume
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Action / Export Toolbar -->
+      <div class="action-bar">
+        <button id="btnExportJson" class="btn btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export JSON Analysis
+        </button>
+        <button id="btnPrintReport" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Download PDF / Print Report
+        </button>
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>© 2026 AI Resume Analyzer. Built for high-conversion job applications & ATS optimization.</p>
+    </footer>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/skillDb.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/analyzer.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="samples/sample_resumes.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
